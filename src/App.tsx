@@ -22,6 +22,7 @@ import {
   ScreenReviewDetail, ScreenCommunityDetail, ScreenCommunityMap,
   ScreenTasteQuiz, ScreenRankDetail,
 } from '@/screens/Overlays';
+import { BAKERIES, COLLECTIONS, SOCIAL_POSTS } from '@/data/bakeries';
 
 type Tab = 'explore' | 'near' | 'social' | 'search' | 'profile';
 
@@ -30,6 +31,7 @@ type RouteState = {
   tab: Tab;
   query: string;
   routeOverlay?: OverlayItem;
+  captureIndex?: boolean;
 };
 
 const TAB_PATHS: Record<Tab, string> = {
@@ -62,6 +64,7 @@ const parseRoute = (): RouteState => {
     };
   }
 
+  if (path === '/capture') return { tab: 'explore', query: '', captureIndex: true };
   if (path === '/near') return { tab: 'near', query: '' };
   if (path === '/social') return { tab: 'social', query: '' };
   if (path === '/profile') return { tab: 'profile', query: '' };
@@ -69,15 +72,133 @@ const parseRoute = (): RouteState => {
   return { tab: 'explore', query: '' };
 };
 
+const withCapture = (path: string) => `${path}${path.includes('?') ? '&' : '?'}capture=1`;
+
+function CaptureIndex() {
+  const sections = [
+    {
+      title: '메인 탭',
+      links: [
+        { label: 'Explore', path: '/explore' },
+        { label: 'Near', path: '/near' },
+        { label: 'Social', path: '/social' },
+        { label: 'Search', path: '/search' },
+        { label: 'Search - 소금빵 검색', path: '/search?q=소금빵' },
+        { label: 'Profile', path: '/profile' },
+      ],
+    },
+    {
+      title: '베이커리 상세 전체',
+      links: BAKERIES.map(b => ({
+        label: `${b.id} · ${b.name} · ${b.region}`,
+        path: `/bakery/${b.id}`,
+      })),
+    },
+    {
+      title: '컬렉션 상세 전체',
+      links: COLLECTIONS.map(c => ({
+        label: `${c.id} · ${c.name}`,
+        path: `/collection/${c.id}`,
+      })),
+    },
+    {
+      title: '게시글이 연결된 장소 상세',
+      links: SOCIAL_POSTS.map(p => ({
+        label: `${p.id} · ${p.user} 노트 → ${p.bakeryName}`,
+        path: `/bakery/${p.bakeryId}`,
+      })),
+    },
+  ];
+
+  return (
+    <div style={{
+      position: 'absolute',
+      inset: 0,
+      overflowY: 'auto',
+      background: 'var(--color-background-normal)',
+      padding: '28px 20px 44px',
+      color: 'var(--color-label-normal)',
+    }}>
+      <div style={{ display: 'grid', gap: 10, marginBottom: 24 }}>
+        <div style={{
+          fontSize: 12,
+          fontWeight: 700,
+          color: 'var(--color-fill-brand-default)',
+          textTransform: 'uppercase',
+          letterSpacing: 0,
+        }}>Capture index</div>
+        <h1 style={{ margin: 0, fontSize: 30, lineHeight: 1.05, letterSpacing: 0 }}>
+          Gluten 전체 캡쳐 페이지
+        </h1>
+        <p style={{
+          margin: 0,
+          color: 'var(--color-label-alternative)',
+          fontSize: 14,
+          lineHeight: 1.55,
+        }}>
+          모든 링크는 온보딩을 건너뛰는 캡쳐 모드로 열립니다. 휴대폰에서도 바로 각 화면을 캡쳐할 수 있어요.
+        </p>
+      </div>
+
+      <div style={{ display: 'grid', gap: 18 }}>
+        {sections.map(section => (
+          <section key={section.title} style={{ display: 'grid', gap: 10 }}>
+            <h2 style={{ margin: 0, fontSize: 16, letterSpacing: 0 }}>{section.title}</h2>
+            <div style={{ display: 'grid', gap: 8 }}>
+              {section.links.map(link => (
+                <a
+                  key={`${section.title}-${link.label}`}
+                  href={withCapture(link.path)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                    minHeight: 48,
+                    padding: '12px 14px',
+                    border: '1px solid var(--color-border-subtle)',
+                    borderRadius: 'var(--radius-xs, 8px)',
+                    background: 'var(--color-background-elevated)',
+                    color: 'var(--color-label-normal)',
+                    textDecoration: 'none',
+                    fontSize: 14,
+                    fontWeight: 700,
+                    boxShadow: 'var(--elevation-shadow-1)',
+                  }}
+                >
+                  <span>{link.label}</span>
+                  <span style={{
+                    color: 'var(--color-label-assistive)',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    whiteSpace: 'nowrap',
+                  }}>{withCapture(link.path)}</span>
+                </a>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function App() {
-  const [onboarded, setOnboarded] = useState<boolean>(false);
   const [route, setRoute] = useState<RouteState>(() => parseRoute());
+  const isCaptureMode = route.captureIndex || new URLSearchParams(window.location.search).get('capture') === '1';
+  const [onboarded, setOnboarded] = useState<boolean>(() => (
+    isCaptureMode || window.localStorage.getItem('gluten:onboarded') === '1'
+  ));
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [overlayStack, setOverlayStack] = useState<OverlayItem[]>([]);
   const [locationAsked, setLocationAsked] = useState<boolean>(false);
 
   const tab = route.tab;
   const routeOverlay = route.routeOverlay;
+  const completeOnboarding = () => {
+    window.localStorage.setItem('gluten:onboarded', '1');
+    setOnboarded(true);
+  };
 
   const syncRoute = () => setRoute(parseRoute());
   const navigate = (path: string, state: Record<string, any> = {}) => {
@@ -125,6 +246,10 @@ function App() {
     }
   }, [route.tab, route.query]);
 
+  useEffect(() => {
+    if (isCaptureMode && !onboarded) setOnboarded(true);
+  }, [isCaptureMode, onboarded]);
+
   // Ask location permission first time user enters Near tab
   useEffect(() => {
     if (onboarded && tab === 'near' && !locationAsked) {
@@ -152,12 +277,16 @@ function App() {
         }} data-screen-label={onboarded ? `app/${tab}` : 'app/onboarding'}>
 
           {/* Onboarding */}
-          {!onboarded && (
-            <ScreenOnboarding onComplete={() => setOnboarded(true)} />
+          {route.captureIndex && (
+            <CaptureIndex />
+          )}
+
+          {!route.captureIndex && !onboarded && (
+            <ScreenOnboarding onComplete={completeOnboarding} />
           )}
 
           {/* Main app */}
-          {onboarded && (
+          {!route.captureIndex && onboarded && (
             <>
               {/* Tab screens (kept mounted to preserve scroll positions) */}
               <div style={{ position: 'absolute', inset: 0 }}>
@@ -250,7 +379,11 @@ function App() {
                     <ScreenSettings
                       key={key}
                       onClose={closeCurrent}
-                      onLogout={() => { setOverlayStack([]); setOnboarded(false); }}
+                      onLogout={() => {
+                        setOverlayStack([]);
+                        window.localStorage.removeItem('gluten:onboarded');
+                        setOnboarded(false);
+                      }}
                       openOverlay={openOverlay}
                     />
                   );
