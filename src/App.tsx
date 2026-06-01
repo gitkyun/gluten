@@ -26,19 +26,104 @@ import {
 type Tab = 'explore' | 'near' | 'social' | 'search' | 'profile';
 
 type OverlayItem = { kind: string; data?: any };
+type RouteState = {
+  tab: Tab;
+  query: string;
+  routeOverlay?: OverlayItem;
+};
+
+const TAB_PATHS: Record<Tab, string> = {
+  explore: '/explore',
+  near: '/near',
+  social: '/social',
+  search: '/search',
+  profile: '/profile',
+};
+
+const parseRoute = (): RouteState => {
+  const path = window.location.pathname.replace(/\/+$/, '') || '/';
+  const params = new URLSearchParams(window.location.search);
+  const historyState = window.history.state || {};
+  const baseTab: Tab = historyState.baseTab || 'explore';
+
+  if (path.startsWith('/bakery/')) {
+    return {
+      tab: baseTab,
+      query: '',
+      routeOverlay: { kind: 'detail', data: decodeURIComponent(path.split('/')[2] || '') },
+    };
+  }
+
+  if (path.startsWith('/collection/')) {
+    return {
+      tab: baseTab,
+      query: '',
+      routeOverlay: { kind: 'collection', data: decodeURIComponent(path.split('/')[2] || '') },
+    };
+  }
+
+  if (path === '/near') return { tab: 'near', query: '' };
+  if (path === '/social') return { tab: 'social', query: '' };
+  if (path === '/profile') return { tab: 'profile', query: '' };
+  if (path === '/search') return { tab: 'search', query: params.get('q') || '' };
+  return { tab: 'explore', query: '' };
+};
 
 function App() {
   const [onboarded, setOnboarded] = useState<boolean>(false);
-  const [tab, setTab] = useState<Tab>('explore');
+  const [route, setRoute] = useState<RouteState>(() => parseRoute());
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [overlayStack, setOverlayStack] = useState<OverlayItem[]>([]);
   const [locationAsked, setLocationAsked] = useState<boolean>(false);
 
-  const openOverlay = (kind: string, data?: any) =>
+  const tab = route.tab;
+  const routeOverlay = route.routeOverlay;
+
+  const syncRoute = () => setRoute(parseRoute());
+  const navigate = (path: string, state: Record<string, any> = {}) => {
+    window.history.pushState(state, '', path);
+    syncRoute();
+  };
+  const replace = (path: string, state: Record<string, any> = {}) => {
+    window.history.replaceState(state, '', path);
+    syncRoute();
+  };
+  const navigateTab = (nextTab: Tab) => {
+    setOverlayStack([]);
+    navigate(TAB_PATHS[nextTab]);
+  };
+
+  const openOverlay = (kind: string, data?: any) => {
+    if (kind === 'collection') {
+      navigate(`/collection/${encodeURIComponent(data)}`, { baseTab: tab });
+      return;
+    }
     setOverlayStack(prev => [...prev, { kind, data }]);
+  };
   const closeOverlay = () => setOverlayStack(prev => prev.slice(0, -1));
 
-  const openDetail = (id: string) => openOverlay('detail', id);
+  const openDetail = (id: string) =>
+    navigate(`/bakery/${encodeURIComponent(id)}`, { baseTab: tab });
+  const closeRouteOverlay = () => {
+    setOverlayStack([]);
+    navigate(TAB_PATHS[tab] || '/explore');
+  };
+
+  useEffect(() => {
+    const onPopState = () => syncRoute();
+    window.addEventListener('popstate', onPopState);
+    if (window.location.pathname === '/') {
+      window.history.replaceState({}, '', '/explore');
+      syncRoute();
+    }
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  useEffect(() => {
+    if (route.tab === 'search') {
+      setSearchQuery(route.query);
+    }
+  }, [route.tab, route.query]);
 
   // Ask location permission first time user enters Near tab
   useEffect(() => {
@@ -80,7 +165,11 @@ function App() {
                   <ScreenExplore
                     openDetail={openDetail}
                     openOverlay={openOverlay}
-                    onSearch={(q: string) => { setSearchQuery(q || ''); setTab('search'); }}
+                    onSearch={(q: string) => {
+                      const nextQuery = q || '';
+                      setSearchQuery(nextQuery);
+                      navigate(`/search${nextQuery ? `?q=${encodeURIComponent(nextQuery)}` : ''}`);
+                    }}
                   />
                 </div>
                 <div style={{ display: tab === 'near' ? 'block' : 'none', position: 'absolute', inset: 0 }}>
@@ -90,7 +179,14 @@ function App() {
                   <ScreenSocial openDetail={openDetail} openOverlay={openOverlay} />
                 </div>
                 <div style={{ display: tab === 'search' ? 'block' : 'none', position: 'absolute', inset: 0 }}>
-                  <ScreenSearch query={searchQuery} setQuery={setSearchQuery} openDetail={openDetail} />
+                  <ScreenSearch
+                    query={searchQuery}
+                    setQuery={(q: string) => {
+                      setSearchQuery(q);
+                      replace(`/search${q ? `?q=${encodeURIComponent(q)}` : ''}`);
+                    }}
+                    openDetail={openDetail}
+                  />
                 </div>
                 <div style={{ display: tab === 'profile' ? 'block' : 'none', position: 'absolute', inset: 0 }}>
                   <ScreenProfile openDetail={openDetail} openOverlay={openOverlay} />
@@ -98,11 +194,18 @@ function App() {
               </div>
 
               {/* Bottom Nav (hidden when an overlay is open) */}
-              {overlayStack.length === 0 && (
+              {!routeOverlay && overlayStack.length === 0 && (
                 tab === 'search' ? (
-                  <SearchBottomBar query={searchQuery} setQuery={setSearchQuery} onBack={() => setTab('explore')} />
+                  <SearchBottomBar
+                    query={searchQuery}
+                    setQuery={(q: string) => {
+                      setSearchQuery(q);
+                      replace(`/search${q ? `?q=${encodeURIComponent(q)}` : ''}`);
+                    }}
+                    onBack={() => navigateTab('explore')}
+                  />
                 ) : (
-                  <BottomNav tab={tab} setTab={setTab} onSearch={() => setTab('search')} />
+                  <BottomNav tab={tab} setTab={navigateTab} onSearch={() => navigateTab('search')} />
                 )
               )}
 
@@ -113,10 +216,18 @@ function App() {
               <SaveFolderSheet />
 
               {/* Overlays stack */}
-              {overlayStack.map((item, idx) => {
+              {[
+                ...(routeOverlay ? [routeOverlay] : []),
+                ...overlayStack,
+              ].map((item, idx) => {
                 const key = `${item.kind}-${idx}-${JSON.stringify(item.data || '')}`;
+                const isRouteOverlay = routeOverlay && idx === 0;
                 const closeCurrent = () => {
-                  setOverlayStack(prev => prev.slice(0, -1));
+                  if (isRouteOverlay) {
+                    closeRouteOverlay();
+                  } else {
+                    setOverlayStack(prev => prev.slice(0, -1));
+                  }
                 };
 
                 if (item.kind === 'detail') {
