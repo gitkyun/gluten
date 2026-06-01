@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import {
-  SaveProvider, BottomNav, SearchBottomBar, SaveToast,
+  SaveProvider, BottomNav, SearchBottomBar, SaveToast, useSave,
 } from '@/components/shared';
 import { ScreenOnboarding } from '@/screens/Onboarding';
 import { ScreenExplore } from '@/screens/Explore';
@@ -48,6 +48,50 @@ const parseRoute = (): RouteState => {
   const historyState = window.history.state || {};
   const baseTab: Tab = historyState.baseTab || 'explore';
 
+  if (path.startsWith('/capture/')) {
+    const [, , captureKind, first, second] = path.split('/');
+    const decodedFirst = decodeURIComponent(first || '');
+    const decodedSecond = decodeURIComponent(second || '');
+    const dataByKind: Record<string, any> = {
+      notifications: undefined,
+      settings: undefined,
+      'taste-report': undefined,
+      'taste-quiz': undefined,
+      'post-write': undefined,
+      'location-permission': undefined,
+      'rank-detail': { category: decodedFirst || 'all' },
+      'save-folder': decodedFirst || 'b1',
+      'review-write': decodedFirst || 'b1',
+      'user-profile': decodedFirst || '지수',
+      post: decodedFirst || 'p1',
+      review: { bakeryId: decodedFirst || 'b1', reviewIndex: Number(decodedSecond || 0) },
+      community: decodedFirst || 'c1',
+      'community-map': decodedFirst || 'c1',
+    };
+    const kindByPath: Record<string, string> = {
+      notifications: 'notifications',
+      settings: 'settings',
+      'taste-report': 'tasteReport',
+      'taste-quiz': 'tasteQuiz',
+      'post-write': 'postWrite',
+      'location-permission': 'locationPermission',
+      'rank-detail': 'rankDetail',
+      'save-folder': 'saveFolder',
+      'review-write': 'reviewWrite',
+      'user-profile': 'userProfile',
+      post: 'postDetail',
+      review: 'reviewDetail',
+      community: 'communityDetail',
+      'community-map': 'communityMap',
+    };
+
+    return {
+      tab: baseTab,
+      query: '',
+      routeOverlay: { kind: kindByPath[captureKind] || 'notifications', data: dataByKind[captureKind] },
+    };
+  }
+
   if (path.startsWith('/bakery/')) {
     return {
       tab: baseTab,
@@ -73,6 +117,36 @@ const parseRoute = (): RouteState => {
 };
 
 const withCapture = (path: string) => `${path}${path.includes('?') ? '&' : '?'}capture=1`;
+
+const CAPTURE_COMMUNITIES = [
+  { id: 'c1', name: '소금빵 마니아', ph: 'ph-butter', members: '2,128', moodKey: 'sweet', emoji: '🧈', desc: '성수동과 연남동의 숨겨진 소금빵 맛집을 공유하고 토론하는 빵덕후들의 모임입니다.' },
+  { id: 'c2', name: '주말 빵 산책', ph: 'ph-wheat', members: '892', moodKey: 'healthy', emoji: '🚶', desc: '주말 아침, 산책하며 들르기 좋은 조용하고 담백한 동네 빵집을 탐험합니다.' },
+  { id: 'c3', name: '캄파뉴 클럽', ph: 'ph-crust', members: '443', moodKey: 'savory', emoji: '🍞', desc: '천연 발효종을 사용해 시큼하고 고소한 유럽식 식사빵과 캄파뉴 정보를 교류합니다.' },
+  { id: 'c4', name: '성수 탐험가', ph: 'ph-stone', members: '1,420', moodKey: 'specialty', emoji: '☕', desc: '성수동의 가장 핫한 신상 베이커리 카페와 한정판 디저트를 발 빠르게 찾아갑니다.' },
+  { id: 'c5', name: '디저트 새로 열린', ph: 'ph-rose', members: '278', moodKey: 'pixel', emoji: '🍰', desc: '계절 과일 타르트, 밀푀유, 푸딩 등 눈과 입이 모두 즐거운 화려한 디저트를 다룹니다.' },
+];
+
+const getCaptureCommunity = (id?: string) => (
+  CAPTURE_COMMUNITIES.find(c => c.id === id) || CAPTURE_COMMUNITIES[0]
+);
+
+const getCommunityRecommended = (id?: string) => {
+  if (id === 'c1') return [BAKERIES[0], BAKERIES[3], BAKERIES[6]];
+  if (id === 'c2') return [BAKERIES[1], BAKERIES[4], BAKERIES[7]];
+  if (id === 'c3') return [BAKERIES[2], BAKERIES[5], BAKERIES[7]];
+  if (id === 'c4') return [BAKERIES[0], BAKERIES[1], BAKERIES[3]];
+  return BAKERIES.slice(0, 3);
+};
+
+function CaptureSaveFolderRoute({ bakeryId }: { bakeryId: string }) {
+  const { requestSave } = useSave();
+
+  useEffect(() => {
+    requestSave(bakeryId || 'b1');
+  }, [bakeryId, requestSave]);
+
+  return null;
+}
 
 function CaptureIndex() {
   const sections = [
@@ -107,6 +181,69 @@ function CaptureIndex() {
         label: `${p.id} · ${p.user} 노트 → ${p.bakeryName}`,
         path: `/bakery/${p.bakeryId}`,
       })),
+    },
+    {
+      title: '알림/설정/취향',
+      links: [
+        { label: '알림 목록', path: '/capture/notifications' },
+        { label: '설정', path: '/capture/settings' },
+        { label: '취향 리포트', path: '/capture/taste-report' },
+        { label: '취향 재분석 퀴즈', path: '/capture/taste-quiz' },
+        { label: '위치 권한 시트', path: '/capture/location-permission' },
+      ],
+    },
+    {
+      title: '작성/저장 인터랙션',
+      links: [
+        { label: '새 탐험 공유 작성', path: '/capture/post-write' },
+        { label: '저장 폴더 선택 시트', path: '/capture/save-folder/b1' },
+        ...BAKERIES.map(b => ({
+          label: `리뷰 작성 · ${b.id} · ${b.name}`,
+          path: `/capture/review-write/${b.id}`,
+        })),
+      ],
+    },
+    {
+      title: '소셜 상세 전체',
+      links: [
+        ...SOCIAL_POSTS.map(p => ({
+          label: `게시글 상세 · ${p.id} · ${p.user}`,
+          path: `/capture/post/${p.id}`,
+        })),
+        ...SOCIAL_POSTS.map(p => ({
+          label: `유저 프로필 · ${p.user}`,
+          path: `/capture/user-profile/${encodeURIComponent(p.user)}`,
+        })),
+      ],
+    },
+    {
+      title: '리뷰 상세 전체',
+      links: BAKERIES.flatMap(b => [0, 1].map(index => ({
+        label: `리뷰 상세 · ${b.id} · ${b.name} · ${index + 1}`,
+        path: `/capture/review/${b.id}/${index}`,
+      }))),
+    },
+    {
+      title: '커뮤니티 상세 전체',
+      links: CAPTURE_COMMUNITIES.flatMap(c => [
+        {
+          label: `커뮤니티 홈 · ${c.id} · ${c.name}`,
+          path: `/capture/community/${c.id}`,
+        },
+        {
+          label: `커뮤니티 지도 · ${c.id} · ${c.name}`,
+          path: `/capture/community-map/${c.id}`,
+        },
+      ]),
+    },
+    {
+      title: '랭킹 상세 전체',
+      links: [
+        { label: '전체 랭킹', path: '/capture/rank-detail/all' },
+        { label: '소금빵 TOP', path: '/capture/rank-detail/salt' },
+        { label: '식사빵/캄파뉴', path: '/capture/rank-detail/crust' },
+        { label: '디저트/타르트', path: '/capture/rank-detail/dessert' },
+      ],
     },
   ];
 
@@ -185,7 +322,11 @@ function CaptureIndex() {
 
 function App() {
   const [route, setRoute] = useState<RouteState>(() => parseRoute());
-  const isCaptureMode = route.captureIndex || new URLSearchParams(window.location.search).get('capture') === '1';
+  const isCaptureMode = (
+    route.captureIndex ||
+    window.location.pathname.startsWith('/capture') ||
+    new URLSearchParams(window.location.search).get('capture') === '1'
+  );
   const [onboarded, setOnboarded] = useState<boolean>(() => (
     isCaptureMode || window.localStorage.getItem('gluten:onboarded') === '1'
   ));
@@ -397,6 +538,9 @@ function App() {
                 if (item.kind === 'reviewWrite') {
                   return <ScreenReviewWrite key={key} bakeryId={item.data} onClose={closeCurrent} />;
                 }
+                if (item.kind === 'saveFolder') {
+                  return <CaptureSaveFolderRoute key={key} bakeryId={item.data} />;
+                }
                 if (item.kind === 'collection') {
                   return <ScreenCollectionDetail key={key} collectionId={item.data} onClose={closeCurrent} openDetail={openDetail} openOverlay={openOverlay} />;
                 }
@@ -419,10 +563,13 @@ function App() {
                   return <ScreenReviewDetail key={key} bakeryId={item.data.bakeryId} reviewIndex={item.data.reviewIndex} onClose={closeCurrent} openDetail={openDetail} />;
                 }
                 if (item.kind === 'communityDetail') {
-                  return <ScreenCommunityDetail key={key} community={item.data} onClose={closeCurrent} openDetail={openDetail} openOverlay={openOverlay} />;
+                  const community = typeof item.data === 'string' ? getCaptureCommunity(item.data) : item.data;
+                  return <ScreenCommunityDetail key={key} community={community} onClose={closeCurrent} openDetail={openDetail} openOverlay={openOverlay} />;
                 }
                 if (item.kind === 'communityMap') {
-                  return <ScreenCommunityMap key={key} community={item.data.community} recommended={item.data.recommended} onClose={closeCurrent} openDetail={openDetail} />;
+                  const community = typeof item.data === 'string' ? getCaptureCommunity(item.data) : item.data.community;
+                  const recommended = typeof item.data === 'string' ? getCommunityRecommended(item.data) : item.data.recommended;
+                  return <ScreenCommunityMap key={key} community={community} recommended={recommended} onClose={closeCurrent} openDetail={openDetail} />;
                 }
                 if (item.kind === 'tasteQuiz') {
                   return <ScreenTasteQuiz key={key} onClose={closeCurrent} />;
