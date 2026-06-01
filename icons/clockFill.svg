@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+  <g class="Name=clockFill, Fill=True">
+    <g class="Shape">
+      <path fill="#111" fill-rule="evenodd" d="M12 2.1c-5.468 0-9.9 4.432-9.9 9.9s4.432 9.9 9.9 9.9 9.9-4.432 9.9-9.9-4.432-9.9-9.9-9.9Zm-.5 4a.9.9 0 0 1 .9.9v5.127l2.315 2.314a.9.9 0 0 1-1.273 1.273l-2.579-2.578a.897.897 0 0 1-.263-.651V6.999a.9.9 0 0 1 .9-.9Z" class="Normal" clip-rule="evenodd"/>
+    </g>
+  </g>
+</svg>

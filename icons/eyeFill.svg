@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+  <g class="Name=eyeFill, Fill=True">
+    <g class="Shape">
+      <g class="Normal">
+        <path fill="#111" d="M9.9 12a2.1 2.1 0 1 1 4.2 0 2.1 2.1 0 0 1-4.2 0Z"/>
+        <path fill="#111" fill-rule="evenodd" d="M22.094 12.634a1.673 1.673 0 0 0 0-1.27A10.904 10.904 0 0 0 12.005 4.6c-4.556 0-8.459 2.796-10.088 6.765a1.673 1.673 0 0 0 0 1.27c1.629 3.97 5.532 6.765 10.088 6.765 4.557 0 8.46-2.796 10.089-6.765ZM12 8.1a3.9 3.9 0 1 0 0 7.8 3.9 3.9 0 0 0 0-7.8Z" clip-rule="evenodd"/>
+      </g>
+    </g>
+  </g>
+</svg>

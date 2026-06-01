@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+  <g class="Name=circleCloseFill, Fill=True">
+    <g class="Shape">
+      <path fill="#111" fill-rule="evenodd" d="M2.1 12c0-5.468 4.432-9.9 9.9-9.9s9.9 4.432 9.9 9.9-4.432 9.9-9.9 9.9-9.9-4.432-9.9-9.9Zm7.036-4.136a.9.9 0 1 0-1.272 1.273L10.727 12l-2.863 2.864a.9.9 0 0 0 1.272 1.273L12 13.273l2.864 2.864a.9.9 0 1 0 1.272-1.273L13.273 12l2.863-2.863a.9.9 0 1 0-1.272-1.273L12 10.727 9.136 7.864Z" class="Normal" clip-rule="evenodd"/>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+  <g class="Name=circlePlusFill, Fill=True">
+    <g class="Shape">
+      <path fill="#111" fill-rule="evenodd" d="M2.1 12c0-5.468 4.432-9.9 9.9-9.9s9.9 4.432 9.9 9.9-4.432 9.9-9.9 9.9-9.9-4.432-9.9-9.9Zm10.8-4.25a.9.9 0 1 0-1.8 0v3.35H7.75a.9.9 0 1 0 0 1.8h3.35v3.35a.9.9 0 0 0 1.8 0V12.9h3.35a.9.9 0 0 0 0-1.8H12.9V7.75Z" class="Normal" clip-rule="evenodd"/>
+    </g>
+  </g>
+</svg>

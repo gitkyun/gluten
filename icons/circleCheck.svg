@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+  <g class="Name=circleCheck, Fill=False">
+    <g class="Shape">
+      <g class="Normal">
+        <path fill="#111" d="M16.647 9.876a.9.9 0 1 0-1.294-1.252l-4.676 4.831-2.03-2.103a.9.9 0 0 0-1.295 1.25l2.677 2.773a.9.9 0 0 0 1.294 0l5.324-5.5Z"/>
+        <path fill="#111" fill-rule="evenodd" d="M12 2.1c-5.468 0-9.9 4.432-9.9 9.9s4.432 9.9 9.9 9.9 9.9-4.432 9.9-9.9-4.432-9.9-9.9-9.9ZM3.9 12a8.1 8.1 0 1 1 16.2 0 8.1 8.1 0 0 1-16.2 0Z" clip-rule="evenodd"/>
+      </g>
+    </g>
+  </g>
+</svg>
